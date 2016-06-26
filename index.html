@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html lang="en" ng-app="myApp" class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html lang="en" ng-app="myApp" class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html lang="en" ng-app="myApp" class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!--> <html lang="en" ng-app="myApp" class="no-js"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>My AngularJS App</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="css/app.css">
+  <link rel="stylesheet" href="css/daterangepicker.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+</head>
+<body  ng-controller="graphCtrl" style="min-height: 750px; background-image: url('img/wasatka.png'); background-position: right bottom;background-repeat: no-repeat">
+
+  <div ng-view></div>
+  <div  style="float: left">
+  <canvas id="myCanvas" width="200" height="100" style="border:1px solid #000000;">
+
+  </canvas>
+  </div>
+  <div id="controls" style="float: left">
+    wymiar:
+    <input type="number" ng-model="imageSize" ng-change="update()" style="width:80px"/>
+    gr. wąsu:
+    <input type="number" ng-model="whiskerSize" ng-change="update()"  style="width:40px"/>
+    gr. boksu:
+    <input type="number" ng-model="boxSize" ng-change="update()" style="width:40px"/>
+    obr:
+    <input type="number" ng-model="rotation" ng-change="update()" style="width:40px"/>
+    <div ng-repeat="arc in arcs">
+
+      <input type="text" name="daterange" ng-model="arc.daterange"  ng-change="updateDay(arc)"/>
+      <input type="color" width="2" ng-model="arc.colour" value="{{arc.colour}}" ng-change="update()"/>
+      wąsy:
+      <input type="checkbox" ng-model="arc.isWhiskers" ng-change="update()"/>
+      <input type="text" name="daterange" ng-model="arc.whiskers"  ng-change="updateDay(arc)" ng-if="arc.isWhiskers" />
+      wys:
+      <input type="number" style="width:50px" ng-model="arc.offset"  ng-change="update()"/>
+      <input type="button" ng-click="remove(arc)" value="usuń"/>
+
+    </div>
+    <div><input type="button" ng-click="addArc()" value="dodaj nowy element" class="btn btn-default"></div>
+  </div>
+  <div style="position:fixed; bottom:0px">WĄSATKA v.0.1 - wykresy pudełkowe z wąsami na kalendarzu, <a href='mailto: karsiwek@gmail.com'>karsiwek@gmail.com</a></div>
+  <script>
+
+    var c = document.getElementById("myCanvas");
+    var ctx = c.getContext("2d");
+
+    ctx.fillStyle = "#FF0000";
+    ctx.fillRect(0,0,150,75);
+
+    var romans = ["I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII"];
+
+    var size,boxSize, whiskerSize;
+
+    var arcs = [];
+    var radius = 200;
+
+    var drawArc = function(ctx, arc) {
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, radius*.7+arc.offset, ((arc.from-3)/12)*(Math.PI*2), ((arc.to-3)/12)*(Math.PI*2), false);
+      ctx.lineWidth = boxSize;
+      ctx.strokeStyle = arc.colour;
+      ctx.stroke();
+
+      if(arc.isWhiskers){
+        ctx.beginPath();
+        ctx.arc(size/2, size/2, radius*.7+arc.offset, ((arc.fromWhirker-3)/12)*(Math.PI*2), ((arc.toWhirker-3)/12)*(Math.PI*2), false);
+        ctx.lineWidth = whiskerSize;
+        ctx.stroke();
+      }
+    }
+
+    var drawFrame = function(ctx) {
+      ctx.font = 'bold 20pt Times New Roman';
+
+      ctx.beginPath();
+      ctx.strokeStyle = "white";
+      ctx.arc(size/2, size/2, size/2, 0, (Math.PI*2), false);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.stroke();
+
+      for(var i=0;i<12;i++){
+        ctx.beginPath();
+        ctx.strokeStyle = "black";
+        ctx.moveTo(0, size/2);
+        ctx.lineTo(size, size/2);
+        ctx.stroke();
+
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(Math.PI / 12);
+        ctx.translate(-size / 2, -size / 2);
+
+        ctx.fillStyle = 'black';
+        ctx.fillText(romans[i], size/2-(romans[i].length*6), 20);
+
+        ctx.translate(size / 2, size / 2);
+        ctx.rotate(Math.PI / 12);
+        ctx.translate(-size / 2, -size / 2);
+      }
+
+
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, radius*.85, 0, (Math.PI*2), false);
+      ctx.lineWidth = 1;
+      ctx.fillStyle = 'white';
+      ctx.fill();
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(size/2, size/2, radius*.6, 0, (Math.PI*2), false);
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "black";
+      ctx.stroke();
+    }
+
+
+    var reload = function(){
+      radius = (size-50)/2;
+      c.setAttribute("width", size);
+      c.setAttribute("height", size);
+
+      ctx.translate(size / 2, size / 2);
+      ctx.rotate(rotation*(Math.PI / 24));
+      ctx.translate(-size / 2, -size / 2);
+      drawFrame(ctx)
+
+      for(var i=0;i<arcs.length;i++){
+        drawArc(ctx, arcs[i]);
+      }
+    }
+
+    var clearCircle = function(x, y, radius)
+    {
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+        ctx.clip();
+        ctx.clearRect(x - radius - 1, y - radius - 1,
+                          radius * 2 + 2, radius * 2 + 2);
+    };
+
+    size=500;
+    boxSize=8;
+    whiskerSize=2;
+    rotation = 0;
+    reload();
+  </script>
+
+
+  <!-- In production use:
+  <script src="//ajax.googleapis.com/ajax/libs/angularjs/x.x.x/angular.min.js"></script>
+  -->
+  <script src="js/jquery.min.js"></script>
+  <script src="js/angular.min.js"></script>
+  <script src="js/angular-route.min.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/daterangepicker.js"></script>
+  <script src="js/moment.min.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+</body>
+</html>
