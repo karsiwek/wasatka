@@ -13,9 +13,6 @@ config(['$routeProvider', function($routeProvider) {
     $scope.boxSize = boxSize;
     $scope.whiskerSize = whiskerSize;
     $scope.rotation = rotation;
-    $scope.$watch("arcs", function(){
-        console.log(1);
-    })
 
     $scope.update = function(){
         window.size=$scope.imageSize;
@@ -69,16 +66,18 @@ config(['$routeProvider', function($routeProvider) {
 
         $scope.arcs[$scope.arcs.length] = arc;
         $scope.updateDay(arc);
+        ga('send', 'addArc');
     }
 
     $scope.remove = function(arc){
-        if(window.confirm("czy na pewno Pani Ilonko chcesz usunąć tę kreskę?")){
+        if(window.confirm("czy na pewno chcesz usunąć ten element?")){
             var elem = $scope.arcs.indexOf(arc);
             if(elem>-1){
                 $scope.arcs.splice(elem,1);
             }
         }
         $scope.update();
+        ga('send', 'removeArc');
     }
 
 
